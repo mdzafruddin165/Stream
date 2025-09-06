@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowLeft, Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
 import type { Content } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -28,6 +28,7 @@ export function Player({ content, nextContent }: PlayerProps) {
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [showUpNext, setShowUpNext] = useState(false);
   const [upNextCountdown, setUpNextCountdown] = useState(10);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   let controlsTimeout: NodeJS.Timeout | null = null;
 
@@ -77,11 +78,16 @@ export function Player({ content, nextContent }: PlayerProps) {
           setIsPlaying(true);
         }
     };
+
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
     
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
     
     const playerDiv = playerRef.current;
     playerDiv?.addEventListener('mousemove', handleMouseMove);
@@ -96,6 +102,7 @@ export function Player({ content, nextContent }: PlayerProps) {
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('timeupdate', handleTimeUpdate);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
       playerDiv?.removeEventListener('mousemove', handleMouseMove);
       if (controlsTimeout) clearTimeout(controlsTimeout);
     };
@@ -130,6 +137,7 @@ export function Player({ content, nextContent }: PlayerProps) {
   };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
     const video = videoRef.current;
     if (!video) return;
     const { left, width } = e.currentTarget.getBoundingClientRect();
@@ -158,10 +166,23 @@ export function Player({ content, nextContent }: PlayerProps) {
     togglePlay();
   };
 
+  const toggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!playerRef.current) return;
+
+    if (!document.fullscreenElement) {
+      playerRef.current.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   return (
     <div
       ref={playerRef}
-      className="relative w-full h-screen bg-black overflow-hidden"
+      className="relative w-full h-screen bg-black overflow-hidden cursor-pointer"
       onClick={handlePlayerClick}
     >
       <video
@@ -172,6 +193,12 @@ export function Player({ content, nextContent }: PlayerProps) {
         muted
       />
 
+      {!isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <Play className="h-24 w-24 text-white/70" />
+          </div>
+      )}
+
       <div className={cn(
         "absolute inset-0 transition-opacity duration-300 pointer-events-none",
         showControls || !isPlaying ? 'opacity-100' : 'opacity-0'
@@ -179,16 +206,18 @@ export function Player({ content, nextContent }: PlayerProps) {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/70" />
         
         <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 lg:p-8 flex items-center justify-between pointer-events-auto">
-          <Link href="/" className="flex items-center gap-2 text-white hover:text-primary transition-colors">
-            <ArrowLeft className="h-6 w-6 sm:h-7 sm:w-7" />
-            <div className="flex flex-col">
-              <span className="text-lg sm:text-xl font-bold leading-tight">{content.title}</span>
-              <span className="text-xs text-muted-foreground">Back to browse</span>
-            </div>
+          <Link href="/" passHref>
+            <Button variant="ghost" size="icon" className="h-12 w-12 text-white hover:bg-white/10 hover:text-white">
+                <ArrowLeft className="h-6 w-6 sm:h-7 sm:w-7" />
+            </Button>
           </Link>
+          <div className="flex flex-col items-center text-center">
+              <span className="text-lg sm:text-xl font-bold leading-tight">{content.title}</span>
+            </div>
+          <div className="w-12"/>
         </div>
         
-        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8 space-y-3 pointer-events-auto">
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8 space-y-3 pointer-events-auto" onClick={e => e.stopPropagation()}>
           <div className="w-full cursor-pointer group" onClick={handleSeek}>
             <Progress value={progress} className="h-1 bg-white/20 group-hover:h-1.5 transition-all duration-200" />
           </div>
@@ -201,7 +230,11 @@ export function Player({ content, nextContent }: PlayerProps) {
                 {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
               </Button>
             </div>
-             {/* Future controls can go here, e.g. next episode, quality settings */}
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
+                {isFullscreen ? <Minimize className="h-6 w-6" /> : <Maximize className="h-6 w-6" />}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
