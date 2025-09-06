@@ -10,7 +10,7 @@ type WatchPageProps = {
   };
 };
 
-export default function WatchPage({ params }: WatchPageProps) {
+export default async function WatchPage({ params }: WatchPageProps) {
   const content = contentData.find(c => c.id === params.id);
 
   if (!content) {
