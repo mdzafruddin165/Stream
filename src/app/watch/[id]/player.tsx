@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -26,6 +26,7 @@ export function Player({ content, nextContent }: PlayerProps) {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -38,129 +39,136 @@ export function Player({ content, nextContent }: PlayerProps) {
   const [showDescription, setShowDescription] = useState(false);
   const [upNextCancelled, setUpNextCancelled] = useState(false);
   
-  let controlsTimeout: NodeJS.Timeout | null = null;
+  const hideControls = useCallback(() => {
+    if (isPlaying) {
+      setShowControls(false);
+    }
+  }, [isPlaying]);
 
-  const handleMouseMove = () => {
+  const scheduleControlsTimeout = useCallback(() => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    controlsTimeoutRef.current = setTimeout(hideControls, 3000);
+  }, [hideControls]);
+
+  const handleMouseMove = useCallback(() => {
     setShowControls(true);
-    if (controlsTimeout) clearTimeout(controlsTimeout);
-    controlsTimeout = setTimeout(() => {
-      if (isPlaying) {
-        setShowControls(false);
-      }
-    }, 3000);
-  };
-  
+    scheduleControlsTimeout();
+  }, [scheduleControlsTimeout]);
+
+  const togglePlay = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      video.play().catch(error => console.error("Playback failed:", error));
+    } else {
+      video.pause();
+    }
+  }, []);
+
+  // Main Effect for Video Events
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     // Reset state for new content
-    setUpNextCancelled(false);
-    setShowUpNext(false);
-    setShowSkipIntro(false);
-    setIsPlaying(false); // Start with paused state until we confirm playback
+    setIsPlaying(false);
     setProgress(0);
+    setShowUpNext(false);
+    setUpNextCancelled(false);
+    setShowSkipIntro(false);
+    setShowControls(true);
 
     const attemptAutoplay = () => {
       video.muted = true;
       setIsMuted(true);
-      video.play().then(() => {
-        setIsPlaying(true);
-      }).catch(error => {
-        console.error("Autoplay was prevented:", error);
-        setIsPlaying(false);
-      });
+      const promise = video.play();
+      if (promise !== undefined) {
+        promise.then(() => {
+          setIsPlaying(true);
+          scheduleControlsTimeout();
+        }).catch(error => {
+          console.error("Autoplay was prevented:", error);
+          setIsPlaying(false);
+        });
+      }
     };
-
     attemptAutoplay();
 
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
-    
+
     const handleTimeUpdate = () => {
       const { currentTime, duration } = video;
-      if (duration > 0) {
-        setProgress((currentTime / duration) * 100);
+      if (isNaN(duration)) return;
 
-        if (currentTime > 10 && currentTime < 30) {
-          setShowSkipIntro(true);
-        } else {
-          setShowSkipIntro(false);
-        }
-        
-        const remainingTime = duration - currentTime;
-        
-        // This is the key logic that needed fixing
-        setUpNextCancelled(wasCancelled => {
-          if (remainingTime < 11 && duration > 11 && !wasCancelled) {
-             if (!showUpNext) {
-               setShowUpNext(true);
-               setUpNextCountdown(10);
-             }
-          }
-          return wasCancelled;
-        });
+      setProgress((currentTime / duration) * 100);
+
+      // Skip Intro logic
+      setShowSkipIntro(currentTime > 10 && currentTime < 30);
+
+      // Up Next logic
+      const remainingTime = duration - currentTime;
+      if (remainingTime <= 10 && !showUpNext && !upNextCancelled && duration > 10) {
+        setShowUpNext(true);
       }
     };
 
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
+    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
     
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
     video.addEventListener('timeupdate', handleTimeUpdate);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     
-    const playerDiv = playerRef.current;
-    playerDiv?.addEventListener('mousemove', handleMouseMove);
-    playerDiv?.addEventListener('mouseleave', () => {
-        if (isPlaying && controlsTimeout) {
-            clearTimeout(controlsTimeout);
-        }
-        if (isPlaying) {
-          setShowControls(false);
-        }
-    });
-
-
     return () => {
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      playerDiv?.removeEventListener('mousemove', handleMouseMove);
-      if (controlsTimeout) clearTimeout(controlsTimeout);
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
     };
-  }, [content.id, showUpNext]); // Dependency array updated
-  
-  useEffect(() => {
-    let countdownInterval: NodeJS.Timeout;
-    if (showUpNext && isPlaying && !upNextCancelled) {
-      countdownInterval = setInterval(() => {
-        setUpNextCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval);
-            router.push(`/watch/${nextContent.id}`);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(countdownInterval);
-  }, [showUpNext, nextContent.id, isPlaying, router, upNextCancelled]);
+  }, [content.id, scheduleControlsTimeout, showUpNext, upNextCancelled]);
 
-  const togglePlay = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.paused) {
-      video.play().catch(error => console.error("Playback failed:", error));
-    } else {
-      video.pause();
+
+  // Effect for "Up Next" countdown
+  useEffect(() => {
+    if (showUpNext && isPlaying) {
+      let count = 10;
+      setUpNextCountdown(count);
+      const countdownInterval = setInterval(() => {
+        count--;
+        if (count <= 0) {
+          clearInterval(countdownInterval);
+          router.push(`/watch/${nextContent.id}`);
+        } else {
+          setUpNextCountdown(count);
+        }
+      }, 1000);
+      return () => clearInterval(countdownInterval);
     }
-  };
+  }, [showUpNext, isPlaying, router, nextContent.id]);
+
+
+  // Effect for controls visibility
+  useEffect(() => {
+    const playerEl = playerRef.current;
+    if (!playerEl) return;
+    
+    playerEl.addEventListener('mousemove', handleMouseMove);
+    playerEl.addEventListener('mouseleave', hideControls);
+
+    return () => {
+      playerEl.removeEventListener('mousemove', handleMouseMove);
+      playerEl.removeEventListener('mouseleave', hideControls);
+    };
+  }, [handleMouseMove, hideControls]);
+
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -188,16 +196,13 @@ export function Player({ content, nextContent }: PlayerProps) {
     setIsMuted(video.muted);
   };
   
-  const handlePlayerClick = () => {
-    togglePlay();
-  };
-
   const toggleFullscreen = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!playerRef.current) return;
+    const playerEl = playerRef.current;
+    if (!playerEl) return;
 
     if (!document.fullscreenElement) {
-      playerRef.current.requestFullscreen().catch(err => {
+      playerEl.requestFullscreen().catch(err => {
         console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
       });
     } else {
@@ -215,7 +220,7 @@ export function Player({ content, nextContent }: PlayerProps) {
       <div
         ref={playerRef}
         className="relative w-full h-screen bg-black overflow-hidden cursor-pointer"
-        onClick={handlePlayerClick}
+        onClick={togglePlay}
       >
         <video
           ref={videoRef}
@@ -239,7 +244,7 @@ export function Player({ content, nextContent }: PlayerProps) {
           <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 lg:p-8 flex items-start justify-between pointer-events-auto">
             <div className="flex items-center gap-4">
               <Link href="/" passHref>
-                <Button variant="ghost" size="icon" className="h-12 w-12 text-white hover:bg-white/10 hover:text-white">
+                <Button variant="ghost" size="icon" className="h-12 w-12 text-white hover:bg-white/10 hover:text-white" onClick={(e) => e.stopPropagation()}>
                     <ArrowLeft className="h-6 w-6 sm:h-7 sm:w-7" />
                 </Button>
               </Link>
