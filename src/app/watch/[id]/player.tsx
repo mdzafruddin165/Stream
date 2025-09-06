@@ -27,6 +27,7 @@ export function Player({ content, nextContent }: PlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const upNextCountdownRef = useRef<NodeJS.Timeout | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -37,25 +38,23 @@ export function Player({ content, nextContent }: PlayerProps) {
   const [upNextCountdown, setUpNextCountdown] = useState(10);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
-  const [upNextCancelled, setUpNextCancelled] = useState(false);
-  
-  const hideControls = useCallback(() => {
-    if (isPlaying) {
-      setShowControls(false);
-    }
-  }, [isPlaying]);
+  const [hasUpNextBeenCancelled, setHasUpNextBeenCancelled] = useState(false);
 
-  const scheduleControlsTimeout = useCallback(() => {
+  const scheduleHideControls = useCallback(() => {
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current);
     }
-    controlsTimeoutRef.current = setTimeout(hideControls, 3000);
-  }, [hideControls]);
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (isPlaying) {
+        setShowControls(false);
+      }
+    }, 3000);
+  }, [isPlaying]);
 
   const handleMouseMove = useCallback(() => {
     setShowControls(true);
-    scheduleControlsTimeout();
-  }, [scheduleControlsTimeout]);
+    scheduleHideControls();
+  }, [scheduleHideControls]);
 
   const togglePlay = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -69,31 +68,36 @@ export function Player({ content, nextContent }: PlayerProps) {
     }
   }, []);
 
-  // Main Effect for Video Events
+  const handleCancelUpNext = useCallback(() => {
+    setShowUpNext(false);
+    setHasUpNextBeenCancelled(true);
+    if (upNextCountdownRef.current) {
+      clearInterval(upNextCountdownRef.current);
+    }
+  }, []);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Reset state for new content
+    // Reset state when content changes
     setIsPlaying(false);
     setProgress(0);
     setShowUpNext(false);
-    setUpNextCancelled(false);
+    setHasUpNextBeenCancelled(false);
     setShowSkipIntro(false);
     setShowControls(true);
+    if (upNextCountdownRef.current) clearInterval(upNextCountdownRef.current);
 
-    const attemptAutoplay = () => {
-      video.muted = true;
-      setIsMuted(true);
-      const promise = video.play();
-      if (promise !== undefined) {
-        promise.then(() => {
-          setIsPlaying(true);
-          scheduleControlsTimeout();
-        }).catch(error => {
-          console.error("Autoplay was prevented:", error);
-          setIsPlaying(false);
-        });
+    const attemptAutoplay = async () => {
+      try {
+        video.muted = true;
+        setIsMuted(true);
+        await video.play();
+      } catch (error) {
+        console.error("Autoplay was prevented:", error);
+        setIsPlaying(false);
+        setShowControls(true);
       }
     };
     attemptAutoplay();
@@ -108,11 +112,12 @@ export function Player({ content, nextContent }: PlayerProps) {
       setProgress((currentTime / duration) * 100);
 
       // Skip Intro logic
-      setShowSkipIntro(currentTime > 10 && currentTime < 30);
+      const shouldShowSkipIntro = currentTime > 10 && currentTime < 30;
+      setShowSkipIntro(shouldShowSkipIntro);
 
       // Up Next logic
       const remainingTime = duration - currentTime;
-      if (remainingTime <= 10 && !showUpNext && !upNextCancelled && duration > 10) {
+      if (remainingTime <= 10 && !hasUpNextBeenCancelled && duration > 10) {
         setShowUpNext(true);
       }
     };
@@ -129,28 +134,35 @@ export function Player({ content, nextContent }: PlayerProps) {
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current);
-      }
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+      if (upNextCountdownRef.current) clearInterval(upNextCountdownRef.current);
     };
-  }, [content.id, scheduleControlsTimeout, showUpNext, upNextCancelled]);
+  }, [content.id, hasUpNextBeenCancelled]);
 
 
   // Effect for "Up Next" countdown
   useEffect(() => {
     if (showUpNext && isPlaying) {
+      if (upNextCountdownRef.current) clearInterval(upNextCountdownRef.current);
+      
       let count = 10;
       setUpNextCountdown(count);
-      const countdownInterval = setInterval(() => {
+
+      upNextCountdownRef.current = setInterval(() => {
         count--;
         if (count <= 0) {
-          clearInterval(countdownInterval);
+          clearInterval(upNextCountdownRef.current!);
           router.push(`/watch/${nextContent.id}`);
         } else {
           setUpNextCountdown(count);
         }
       }, 1000);
-      return () => clearInterval(countdownInterval);
+
+      return () => {
+        if (upNextCountdownRef.current) {
+          clearInterval(upNextCountdownRef.current);
+        }
+      };
     }
   }, [showUpNext, isPlaying, router, nextContent.id]);
 
@@ -161,13 +173,20 @@ export function Player({ content, nextContent }: PlayerProps) {
     if (!playerEl) return;
     
     playerEl.addEventListener('mousemove', handleMouseMove);
-    playerEl.addEventListener('mouseleave', hideControls);
+    playerEl.addEventListener('mouseleave', () => {
+       if (isPlaying) setShowControls(false);
+    });
+
+    scheduleHideControls();
 
     return () => {
       playerEl.removeEventListener('mousemove', handleMouseMove);
-      playerEl.removeEventListener('mouseleave', hideControls);
+      playerEl.removeEventListener('mouseleave', () => {
+        if (isPlaying) setShowControls(false);
+      });
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     };
-  }, [handleMouseMove, hideControls]);
+  }, [handleMouseMove, isPlaying, scheduleHideControls]);
 
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -210,10 +229,6 @@ export function Player({ content, nextContent }: PlayerProps) {
     }
   };
 
-  const handleCancelUpNext = () => {
-    setShowUpNext(false);
-    setUpNextCancelled(true);
-  };
 
   return (
     <TooltipProvider>
@@ -237,7 +252,7 @@ export function Player({ content, nextContent }: PlayerProps) {
 
         <div className={cn(
           "absolute inset-0 transition-opacity duration-300 pointer-events-none",
-          showControls || !isPlaying ? 'opacity-100' : 'opacity-0'
+          showControls ? 'opacity-100' : 'opacity-0'
         )}>
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/80" />
           
