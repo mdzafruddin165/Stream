@@ -5,10 +5,11 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowLeft, Play, Pause, RefreshCw, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import type { Content } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 type PlayerProps = {
   content: Content;
@@ -28,11 +29,11 @@ export function Player({ content, nextContent }: PlayerProps) {
   const [showUpNext, setShowUpNext] = useState(false);
   const [upNextCountdown, setUpNextCountdown] = useState(10);
   
-  let controlsTimeout: NodeJS.Timeout;
+  let controlsTimeout: NodeJS.Timeout | null = null;
 
   const handleMouseMove = () => {
     setShowControls(true);
-    clearTimeout(controlsTimeout);
+    if (controlsTimeout) clearTimeout(controlsTimeout);
     controlsTimeout = setTimeout(() => {
       if (isPlaying) {
         setShowControls(false);
@@ -50,13 +51,14 @@ export function Player({ content, nextContent }: PlayerProps) {
       const { currentTime, duration } = video;
       setProgress((currentTime / duration) * 100);
 
-      if (currentTime > 5 && currentTime < 20) {
+      if (currentTime > 10 && currentTime < 30) {
         setShowSkipIntro(true);
       } else {
         setShowSkipIntro(false);
       }
-
-      if (duration - currentTime < 11 && duration > 11) {
+      
+      const remainingTime = duration - currentTime;
+      if (remainingTime < 11 && duration > 11) {
          if (!showUpNext) {
           setShowUpNext(true);
           setUpNextCountdown(10);
@@ -65,11 +67,11 @@ export function Player({ content, nextContent }: PlayerProps) {
         setShowUpNext(false);
       }
     };
+
     const handleLoadedMetadata = () => {
         if (videoRef.current) {
-          videoRef.current.muted = true; // Start muted
+          videoRef.current.muted = true;
           videoRef.current.play().catch(() => {
-            // Autoplay was prevented, user will have to click to play.
             setIsPlaying(false);
           });
           setIsPlaying(true);
@@ -81,10 +83,21 @@ export function Player({ content, nextContent }: PlayerProps) {
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
     
+    const playerDiv = playerRef.current;
+    playerDiv?.addEventListener('mousemove', handleMouseMove);
+    playerDiv?.addEventListener('mouseleave', () => {
+        if (isPlaying && controlsTimeout) {
+            clearTimeout(controlsTimeout);
+        }
+        setShowControls(false);
+    });
+
     return () => {
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('timeupdate', handleTimeUpdate);
+      playerDiv?.removeEventListener('mousemove', handleMouseMove);
+      if (controlsTimeout) clearTimeout(controlsTimeout);
     };
   }, [showUpNext]);
   
@@ -105,7 +118,8 @@ export function Player({ content, nextContent }: PlayerProps) {
     return () => clearInterval(countdownInterval);
   }, [showUpNext, nextContent.id, isPlaying, router]);
 
-  const togglePlay = () => {
+  const togglePlay = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
@@ -124,9 +138,10 @@ export function Player({ content, nextContent }: PlayerProps) {
     video.currentTime = seekTime;
   };
   
-  const skipIntro = () => {
+  const skipIntro = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (videoRef.current) {
-      videoRef.current.currentTime = 20;
+      videoRef.current.currentTime = 30;
       setShowSkipIntro(false);
     }
   };
@@ -138,86 +153,99 @@ export function Player({ content, nextContent }: PlayerProps) {
     video.muted = !video.muted;
     setIsMuted(video.muted);
   };
+  
+  const handlePlayerClick = () => {
+    togglePlay();
+  };
 
   return (
     <div
       ref={playerRef}
-      className="relative w-full h-screen bg-black"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => isPlaying && setShowControls(false)}
+      className="relative w-full h-screen bg-black overflow-hidden"
+      onClick={handlePlayerClick}
     >
       <video
         ref={videoRef}
         src={content.videoUrl}
         className="w-full h-full object-contain"
-        onClick={togglePlay}
         autoPlay
         muted
       />
 
-      <div className={`absolute inset-0 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
-
-        <Link href="/" className="absolute top-6 left-6 sm:top-8 sm:left-8 z-20 flex items-center gap-2 text-white hover:text-primary transition-colors bg-black/30 p-2 rounded-md">
-          <ArrowLeft className="h-6 w-6" />
-        </Link>
+      <div className={cn(
+        "absolute inset-0 transition-opacity duration-300 pointer-events-none",
+        showControls || !isPlaying ? 'opacity-100' : 'opacity-0'
+      )}>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/70" />
         
-        <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 z-10" onClick={e => e.stopPropagation()}>
-          <div className="max-w-3xl">
-              <h1 className="text-2xl sm:text-4xl font-bold text-white drop-shadow-lg">{content.title}</h1>
+        <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 lg:p-8 flex items-center justify-between pointer-events-auto">
+          <Link href="/" className="flex items-center gap-2 text-white hover:text-primary transition-colors">
+            <ArrowLeft className="h-6 w-6 sm:h-7 sm:w-7" />
+            <div className="flex flex-col">
+              <span className="text-lg sm:text-xl font-bold leading-tight">{content.title}</span>
+              <span className="text-xs text-muted-foreground">Back to browse</span>
+            </div>
+          </Link>
+        </div>
+        
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8 space-y-3 pointer-events-auto">
+          <div className="w-full cursor-pointer group" onClick={handleSeek}>
+            <Progress value={progress} className="h-1 bg-white/20 group-hover:h-1.5 transition-all duration-200" />
           </div>
-          <div className="w-full mt-4">
-            <div className="w-full cursor-pointer group" onClick={handleSeek}>
-              <Progress value={progress} className="h-1 group-hover:h-1.5 transition-all" />
+          <div className="flex items-center justify-between text-white">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Button variant="ghost" size="icon" onClick={togglePlay}>
+                {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
+              </Button>
+              <Button variant="ghost" size="icon" onClick={toggleMute}>
+                {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
+              </Button>
             </div>
-            <div className="flex items-center justify-between mt-2 text-white">
-              <div className="flex items-center gap-2 sm:gap-4">
-                <Button variant="ghost" size="icon" onClick={togglePlay}>
-                  {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
-                </Button>
-                <Button variant="ghost" size="icon" onClick={toggleMute}>
-                  {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
-                </Button>
-              </div>
-            </div>
+             {/* Future controls can go here, e.g. next episode, quality settings */}
           </div>
         </div>
       </div>
       
       {showSkipIntro && (
-        <div className="absolute bottom-28 right-8 z-30">
-          <Button onClick={e => {e.stopPropagation(); skipIntro()}} className="bg-white/90 text-black hover:bg-white">Skip Intro</Button>
+        <div className="absolute bottom-24 sm:bottom-28 right-4 sm:right-8 z-20 pointer-events-auto">
+          <Button onClick={skipIntro} className="bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border border-white/30">
+            Skip Intro
+          </Button>
         </div>
       )}
       
       {showUpNext && (
         <div 
-          className="absolute inset-0 bg-black/80 z-40 flex items-center justify-end"
-          onClick={e => e.stopPropagation()}
+          className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent z-30 flex items-center justify-start pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
         >
-          <div className="w-full md:w-1/2 lg:w-2/5 p-8 text-white space-y-4">
+          <div className="w-full md:w-2/5 lg:w-1/3 p-8 text-white space-y-4">
               <div>
-                <p className="text-lg text-muted-foreground">Up Next</p>
-                <h2 className="text-3xl font-bold mt-1">{nextContent.title}</h2>
+                <p className="text-lg text-muted-foreground font-semibold">Up Next</p>
+                <h2 className="text-3xl font-bold mt-1 line-clamp-2">{nextContent.title}</h2>
               </div>
-              <div className="flex items-center gap-4">
-                <Button onClick={() => router.push(`/watch/${nextContent.id}`)} className="bg-primary/90 hover:bg-primary">
-                  <Play className="mr-2 h-5 w-5" /> Play Now
-                </Button>
-                <p className="text-muted-foreground">Next episode in {upNextCountdown}s</p>
-              </div>
-          </div>
-           <div className="w-full md:w-1/2 lg:w-3/5 h-full relative hidden md:block">
-                <Image
-                    src={nextContent.thumbnailUrl.replace('600/400', '1280/720')}
+               <div className="relative h-40 w-full rounded-lg overflow-hidden my-4 shadow-lg">
+                 <Image
+                    src={nextContent.thumbnailUrl.replace('600/400', '800/450')}
                     alt={nextContent.title}
                     fill
                     className="object-cover"
                     data-ai-hint="movie cinematic"
                 />
-                 <div className="absolute inset-0 bg-gradient-to-l from-black/30 via-black/80 to-black" />
-            </div>
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                 <div className="absolute bottom-2 right-2 text-sm bg-black/50 px-2 py-1 rounded">
+                   Next episode in {upNextCountdown}s
+                 </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <Button onClick={() => router.push(`/watch/${nextContent.id}`)} size="lg" className="bg-primary/90 hover:bg-primary flex-1">
+                  <Play className="mr-2 h-5 w-5" /> Play Now
+                </Button>
+                <Button onClick={() => setShowUpNext(false)} size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30">
+                  Cancel
+                </Button>
+              </div>
+          </div>
         </div>
       )}
     </div>
