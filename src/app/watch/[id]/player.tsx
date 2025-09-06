@@ -57,22 +57,24 @@ export function Player({ content, nextContent }: PlayerProps) {
     const handlePause = () => setIsPlaying(false);
     const handleTimeUpdate = () => {
       const { currentTime, duration } = video;
-      setProgress((currentTime / duration) * 100);
+      if (duration > 0) {
+        setProgress((currentTime / duration) * 100);
 
-      if (currentTime > 10 && currentTime < 30) {
-        setShowSkipIntro(true);
-      } else {
-        setShowSkipIntro(false);
-      }
-      
-      const remainingTime = duration - currentTime;
-      if (remainingTime < 11 && duration > 11) {
-         if (!showUpNext) {
-          setShowUpNext(true);
-          setUpNextCountdown(10);
+        if (currentTime > 10 && currentTime < 30) {
+          setShowSkipIntro(true);
+        } else {
+          setShowSkipIntro(false);
         }
-      } else {
-        setShowUpNext(false);
+        
+        const remainingTime = duration - currentTime;
+        if (remainingTime < 11 && duration > 11) {
+          if (!showUpNext) {
+            setShowUpNext(true);
+            setUpNextCountdown(10);
+          }
+        } else {
+          setShowUpNext(false);
+        }
       }
     };
 
@@ -100,12 +102,14 @@ export function Player({ content, nextContent }: PlayerProps) {
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise.then(() => {
+        // Autoplay started!
         setIsPlaying(true);
       }).catch(error => {
+        // Autoplay was prevented.
+        // The user will need to interact to start the video.
         console.error("Autoplay was prevented: ", error);
         setIsPlaying(false);
-        // If autoplay is blocked, we'll keep the video muted
-        // and let the user click to start.
+        // Ensure video is muted and show controls so user can interact.
         video.muted = true;
         setIsMuted(true);
       });
@@ -120,7 +124,7 @@ export function Player({ content, nextContent }: PlayerProps) {
       playerDiv?.removeEventListener('mousemove', handleMouseMove);
       if (controlsTimeout) clearTimeout(controlsTimeout);
     };
-  }, [showUpNext, isPlaying]);
+  }, [showUpNext]);
   
   useEffect(() => {
     let countdownInterval: NodeJS.Timeout;
@@ -144,7 +148,7 @@ export function Player({ content, nextContent }: PlayerProps) {
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
-      video.play();
+      video.play().catch(error => console.error("Playback failed:", error));
     } else {
       video.pause();
     }
@@ -206,6 +210,7 @@ export function Player({ content, nextContent }: PlayerProps) {
           className="w-full h-full object-contain"
           autoPlay
           muted
+          playsInline
         />
 
         {!isPlaying && (
@@ -319,3 +324,5 @@ export function Player({ content, nextContent }: PlayerProps) {
     </TooltipProvider>
   );
 }
+
+    
