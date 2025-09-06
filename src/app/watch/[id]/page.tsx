@@ -1,3 +1,4 @@
+
 import { contentData, type Content } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { Player } from './player';
@@ -21,10 +22,10 @@ export default function WatchPage({ params }: WatchPageProps) {
   );
   
   const allContentInCategory = contentData.filter(
-    (item) => item.category === content.category
+    (item) => item.category === content.category && item.id !== content.id
   );
-  const currentIndex = allContentInCategory.findIndex(item => item.id === content.id);
-  const nextContent = allContentInCategory[(currentIndex + 1) % allContentInCategory.length];
+  
+  const nextContent = allContentInCategory.length > 0 ? allContentInCategory[0] : contentData.find(c => c.id !== content.id)!;
 
 
   return (

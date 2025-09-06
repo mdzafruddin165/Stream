@@ -5,11 +5,17 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowLeft, Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Volume2, VolumeX, Maximize, Minimize, Info } from 'lucide-react';
 import type { Content } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 type PlayerProps = {
   content: Content;
@@ -29,6 +35,7 @@ export function Player({ content, nextContent }: PlayerProps) {
   const [showUpNext, setShowUpNext] = useState(false);
   const [upNextCountdown, setUpNextCountdown] = useState(10);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showDescription, setShowDescription] = useState(false);
   
   let controlsTimeout: NodeJS.Timeout | null = null;
 
@@ -95,7 +102,9 @@ export function Player({ content, nextContent }: PlayerProps) {
         if (isPlaying && controlsTimeout) {
             clearTimeout(controlsTimeout);
         }
-        setShowControls(false);
+        if (isPlaying) {
+          setShowControls(false);
+        }
     });
 
     return () => {
@@ -106,7 +115,7 @@ export function Player({ content, nextContent }: PlayerProps) {
       playerDiv?.removeEventListener('mousemove', handleMouseMove);
       if (controlsTimeout) clearTimeout(controlsTimeout);
     };
-  }, [showUpNext]);
+  }, [showUpNext, isPlaying]);
   
   useEffect(() => {
     let countdownInterval: NodeJS.Timeout;
@@ -180,107 +189,128 @@ export function Player({ content, nextContent }: PlayerProps) {
   };
 
   return (
-    <div
-      ref={playerRef}
-      className="relative w-full h-screen bg-black overflow-hidden cursor-pointer"
-      onClick={handlePlayerClick}
-    >
-      <video
-        ref={videoRef}
-        src={content.videoUrl}
-        className="w-full h-full object-contain"
-        autoPlay
-        muted
-      />
+    <TooltipProvider>
+      <div
+        ref={playerRef}
+        className="relative w-full h-screen bg-black overflow-hidden cursor-pointer"
+        onClick={handlePlayerClick}
+      >
+        <video
+          ref={videoRef}
+          src={content.videoUrl}
+          className="w-full h-full object-contain"
+          autoPlay
+          muted
+        />
 
-      {!isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <Play className="h-24 w-24 text-white/70" />
+        {!isPlaying && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 pointer-events-none">
+                <Play className="h-24 w-24 text-white/70" />
+            </div>
+        )}
+
+        <div className={cn(
+          "absolute inset-0 transition-opacity duration-300 pointer-events-none",
+          showControls || !isPlaying ? 'opacity-100' : 'opacity-0'
+        )}>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/80" />
+          
+          <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 lg:p-8 flex items-start justify-between pointer-events-auto">
+            <div className="flex items-center gap-4">
+              <Link href="/" passHref>
+                <Button variant="ghost" size="icon" className="h-12 w-12 text-white hover:bg-white/10 hover:text-white">
+                    <ArrowLeft className="h-6 w-6 sm:h-7 sm:w-7" />
+                </Button>
+              </Link>
+              <div className="flex flex-col">
+                <h1 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">{content.title}</h1>
+                <p 
+                  className={cn("text-sm text-gray-300 drop-shadow-md max-w-2xl transition-all duration-300 ease-in-out",
+                    showDescription ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0"
+                  )}
+                  style={{ transition: 'max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.3s ease-in-out' }}
+                >
+                  {content.description}
+                </p>
+              </div>
+            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-12 w-12 text-white hover:bg-white/10 hover:text-white" onClick={(e) => { e.stopPropagation(); setShowDescription(!showDescription); }}>
+                    <Info className="h-6 w-6 sm:h-7 sm:w-7" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{showDescription ? 'Hide' : 'Show'} Description</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
-      )}
-
-      <div className={cn(
-        "absolute inset-0 transition-opacity duration-300 pointer-events-none",
-        showControls || !isPlaying ? 'opacity-100' : 'opacity-0'
-      )}>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/70" />
+          
+          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8 space-y-3 pointer-events-auto" onClick={e => e.stopPropagation()}>
+            <div className="w-full cursor-pointer group" onClick={handleSeek}>
+              <Progress value={progress} className="h-1.5 bg-white/30 group-hover:h-2 transition-all duration-200" />
+            </div>
+            <div className="flex items-center justify-between text-white">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={togglePlay}>
+                  {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
+                </Button>
+                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={toggleMute}>
+                  {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
+                </Button>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-4">
+                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={toggleFullscreen}>
+                  {isFullscreen ? <Minimize className="h-6 w-6" /> : <Maximize className="h-6 w-6" />}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
         
-        <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 lg:p-8 flex items-center justify-between pointer-events-auto">
-          <Link href="/" passHref>
-            <Button variant="ghost" size="icon" className="h-12 w-12 text-white hover:bg-white/10 hover:text-white">
-                <ArrowLeft className="h-6 w-6 sm:h-7 sm:w-7" />
+        {showSkipIntro && (
+          <div className="absolute bottom-24 sm:bottom-28 right-4 sm:right-8 z-20 pointer-events-auto">
+            <Button onClick={skipIntro} className="bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border border-white/30">
+              Skip Intro
             </Button>
-          </Link>
-          <div className="flex flex-col items-center text-center">
-              <span className="text-lg sm:text-xl font-bold leading-tight">{content.title}</span>
-            </div>
-          <div className="w-12"/>
-        </div>
+          </div>
+        )}
         
-        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8 space-y-3 pointer-events-auto" onClick={e => e.stopPropagation()}>
-          <div className="w-full cursor-pointer group" onClick={handleSeek}>
-            <Progress value={progress} className="h-1 bg-white/20 group-hover:h-1.5 transition-all duration-200" />
-          </div>
-          <div className="flex items-center justify-between text-white">
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Button variant="ghost" size="icon" onClick={togglePlay}>
-                {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
-              </Button>
-              <Button variant="ghost" size="icon" onClick={toggleMute}>
-                {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
-              </Button>
+        {showUpNext && (
+          <div 
+            className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent z-30 flex items-center justify-start pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full md:w-2/5 lg:w-1/3 p-8 text-white space-y-4">
+                <div>
+                  <p className="text-lg text-muted-foreground font-semibold">Up Next</p>
+                  <h2 className="text-3xl font-bold mt-1 line-clamp-2">{nextContent.title}</h2>
+                </div>
+                 <div className="relative h-40 w-full rounded-lg overflow-hidden my-4 shadow-lg">
+                   <Image
+                      src={nextContent.thumbnailUrl.replace('600/400', '800/450')}
+                      alt={nextContent.title}
+                      fill
+                      className="object-cover"
+                      data-ai-hint="movie cinematic"
+                  />
+                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                   <div className="absolute bottom-2 right-2 text-sm bg-black/50 px-2 py-1 rounded">
+                     Next episode in {upNextCountdown}s
+                   </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Button onClick={() => router.push(`/watch/${nextContent.id}`)} size="lg" className="bg-primary/90 hover:bg-primary flex-1">
+                    <Play className="mr-2 h-5 w-5" /> Play Now
+                  </Button>
+                  <Button onClick={() => setShowUpNext(false)} size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30">
+                    Cancel
+                  </Button>
+                </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
-                {isFullscreen ? <Minimize className="h-6 w-6" /> : <Maximize className="h-6 w-6" />}
-              </Button>
-            </div>
           </div>
-        </div>
+        )}
       </div>
-      
-      {showSkipIntro && (
-        <div className="absolute bottom-24 sm:bottom-28 right-4 sm:right-8 z-20 pointer-events-auto">
-          <Button onClick={skipIntro} className="bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border border-white/30">
-            Skip Intro
-          </Button>
-        </div>
-      )}
-      
-      {showUpNext && (
-        <div 
-          className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent z-30 flex items-center justify-start pointer-events-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="w-full md:w-2/5 lg:w-1/3 p-8 text-white space-y-4">
-              <div>
-                <p className="text-lg text-muted-foreground font-semibold">Up Next</p>
-                <h2 className="text-3xl font-bold mt-1 line-clamp-2">{nextContent.title}</h2>
-              </div>
-               <div className="relative h-40 w-full rounded-lg overflow-hidden my-4 shadow-lg">
-                 <Image
-                    src={nextContent.thumbnailUrl.replace('600/400', '800/450')}
-                    alt={nextContent.title}
-                    fill
-                    className="object-cover"
-                    data-ai-hint="movie cinematic"
-                />
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                 <div className="absolute bottom-2 right-2 text-sm bg-black/50 px-2 py-1 rounded">
-                   Next episode in {upNextCountdown}s
-                 </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <Button onClick={() => router.push(`/watch/${nextContent.id}`)} size="lg" className="bg-primary/90 hover:bg-primary flex-1">
-                  <Play className="mr-2 h-5 w-5" /> Play Now
-                </Button>
-                <Button onClick={() => setShowUpNext(false)} size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30">
-                  Cancel
-                </Button>
-              </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </TooltipProvider>
   );
 }
