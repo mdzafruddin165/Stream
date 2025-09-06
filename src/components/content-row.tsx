@@ -1,3 +1,4 @@
+
 import type { Content } from '@/lib/data';
 import { ContentCard } from './content-card';
 import {
@@ -14,6 +15,10 @@ type ContentRowProps = {
 };
 
 export function ContentRow({ title, items }: ContentRowProps) {
+  if (items.length === 0) {
+    return null;
+  }
+  
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold px-4 sm:px-6 lg:px-8">{title}</h2>
@@ -21,7 +26,7 @@ export function ContentRow({ title, items }: ContentRowProps) {
         opts={{
           align: "start",
           dragFree: true,
-          loop: true,
+          loop: items.length > 5,
         }}
         className="w-full"
       >
@@ -32,7 +37,7 @@ export function ContentRow({ title, items }: ContentRowProps) {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <div className="hidden md:block">
+        <div className="block">
             <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 border-none text-white disabled:hidden" />
             <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 border-none text-white disabled:hidden" />
         </div>
