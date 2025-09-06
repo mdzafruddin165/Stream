@@ -27,7 +27,7 @@ export function Player({ content, nextContent }: PlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
 
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const [showControls, setShowControls] = useState(true);
@@ -58,20 +58,21 @@ export function Player({ content, nextContent }: PlayerProps) {
     setUpNextCancelled(false);
     setShowUpNext(false);
     setShowSkipIntro(false);
+    setIsPlaying(false); // Start with paused state until we confirm playback
+    setProgress(0);
 
-    // Start playback. Muting is essential for autoplay in most browsers.
-    video.muted = true;
-    setIsMuted(true);
-    const playPromise = video.play();
-
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
+    const attemptAutoplay = () => {
+      video.muted = true;
+      setIsMuted(true);
+      video.play().then(() => {
         setIsPlaying(true);
       }).catch(error => {
         console.error("Autoplay was prevented:", error);
         setIsPlaying(false);
       });
-    }
+    };
+
+    attemptAutoplay();
 
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
@@ -92,8 +93,8 @@ export function Player({ content, nextContent }: PlayerProps) {
             setShowUpNext(true);
             setUpNextCountdown(10);
           }
-        } else {
-          setShowUpNext(false);
+        } else if (showUpNext && upNextCancelled) {
+            setShowUpNext(false);
         }
       }
     };
@@ -127,11 +128,11 @@ export function Player({ content, nextContent }: PlayerProps) {
       playerDiv?.removeEventListener('mousemove', handleMouseMove);
       if (controlsTimeout) clearTimeout(controlsTimeout);
     };
-  }, [content.id, upNextCancelled]); // Rerun effect if the content changes
+  }, [content.id]); // Only re-run when content.id changes
   
   useEffect(() => {
     let countdownInterval: NodeJS.Timeout;
-    if (showUpNext && isPlaying) {
+    if (showUpNext && isPlaying && !upNextCancelled) {
       countdownInterval = setInterval(() => {
         setUpNextCountdown(prev => {
           if (prev <= 1) {
@@ -144,7 +145,7 @@ export function Player({ content, nextContent }: PlayerProps) {
       }, 1000);
     }
     return () => clearInterval(countdownInterval);
-  }, [showUpNext, nextContent.id, isPlaying, router]);
+  }, [showUpNext, nextContent.id, isPlaying, router, upNextCancelled]);
 
   const togglePlay = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -217,9 +218,6 @@ export function Player({ content, nextContent }: PlayerProps) {
           src={content.videoUrl}
           className="w-full h-full object-contain"
           playsInline
-          loop
-          autoPlay
-          muted
         />
 
         {!isPlaying && (
