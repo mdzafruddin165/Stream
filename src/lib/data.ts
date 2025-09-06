@@ -1,3 +1,4 @@
+
 export type Content = {
   id: string;
   title: string;
@@ -7,6 +8,41 @@ export type Content = {
   videoUrl: string;
   type: 'movie' | 'tv';
 };
+
+export type UserProfile = {
+  id: string;
+  name: string;
+  avatarUrl: string;
+};
+
+export const userProfiles: UserProfile[] = [
+  {
+    id: '1',
+    name: 'Alex',
+    avatarUrl: 'https://picsum.photos/seed/alex/200',
+  },
+  {
+    id: '2',
+    name: 'Casey',
+    avatarUrl: 'https://picsum.photos/seed/casey/200',
+  },
+  {
+    id: '3',
+    name: 'Jordan',
+    avatarUrl: 'https://picsum.photos/seed/jordan/200',
+  },
+  {
+    id: '4',
+    name: 'Taylor',
+    avatarUrl: 'https://picsum.photos/seed/taylor/200',
+  },
+    {
+    id: '5',
+    name: 'Kids',
+    avatarUrl: 'https://picsum.photos/seed/kids/200',
+  },
+];
+
 
 export const contentData: Content[] = [
   {
@@ -21,6 +57,15 @@ export const contentData: Content[] = [
   {
     id: 'stranger-things',
     title: 'Stranger Things',
+    description: 'When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces, and one strange little girl.',
+    category: 'Sci-Fi',
+    thumbnailUrl: 'https://picsum.photos/seed/stranger/600/400',
+    videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    type: 'tv',
+  },
+  {
+    id: 'stranger',
+    title: 'Stranger',
     description: 'When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces, and one strange little girl.',
     category: 'Sci-Fi',
     thumbnailUrl: 'https://picsum.photos/seed/stranger/600/400',
