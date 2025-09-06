@@ -76,6 +76,7 @@ export function Player({ content, nextContent }: PlayerProps) {
 
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
+    
     const handleTimeUpdate = () => {
       const { currentTime, duration } = video;
       if (duration > 0) {
@@ -88,14 +89,17 @@ export function Player({ content, nextContent }: PlayerProps) {
         }
         
         const remainingTime = duration - currentTime;
-        if (remainingTime < 11 && duration > 11 && !upNextCancelled) {
-          if (!showUpNext) {
-            setShowUpNext(true);
-            setUpNextCountdown(10);
+        
+        // This is the key logic that needed fixing
+        setUpNextCancelled(wasCancelled => {
+          if (remainingTime < 11 && duration > 11 && !wasCancelled) {
+             if (!showUpNext) {
+               setShowUpNext(true);
+               setUpNextCountdown(10);
+             }
           }
-        } else if (showUpNext && upNextCancelled) {
-            setShowUpNext(false);
-        }
+          return wasCancelled;
+        });
       }
     };
 
@@ -128,7 +132,7 @@ export function Player({ content, nextContent }: PlayerProps) {
       playerDiv?.removeEventListener('mousemove', handleMouseMove);
       if (controlsTimeout) clearTimeout(controlsTimeout);
     };
-  }, [content.id]); // Only re-run when content.id changes
+  }, [content.id, showUpNext]); // Dependency array updated
   
   useEffect(() => {
     let countdownInterval: NodeJS.Timeout;
