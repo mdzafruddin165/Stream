@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -49,16 +50,14 @@ export function Player({ content, nextContent }: PlayerProps) {
       const { currentTime, duration } = video;
       setProgress((currentTime / duration) * 100);
 
-      // Show Skip Intro logic
       if (currentTime > 5 && currentTime < 20) {
         setShowSkipIntro(true);
       } else {
         setShowSkipIntro(false);
       }
 
-      // Show Up Next logic
-      if (duration - currentTime < 10) {
-        if (!showUpNext) {
+      if (duration - currentTime < 11 && duration > 11) {
+         if (!showUpNext) {
           setShowUpNext(true);
           setUpNextCountdown(10);
         }
@@ -68,8 +67,11 @@ export function Player({ content, nextContent }: PlayerProps) {
     };
     const handleLoadedMetadata = () => {
         if (videoRef.current) {
-          videoRef.current.muted = true;
-          videoRef.current.play().catch(() => {});
+          videoRef.current.muted = true; // Start muted
+          videoRef.current.play().catch(() => {
+            // Autoplay was prevented, user will have to click to play.
+            setIsPlaying(false);
+          });
           setIsPlaying(true);
         }
     };
@@ -101,7 +103,7 @@ export function Player({ content, nextContent }: PlayerProps) {
       }, 1000);
     }
     return () => clearInterval(countdownInterval);
-  }, [showUpNext, nextContent, isPlaying, router]);
+  }, [showUpNext, nextContent.id, isPlaying, router]);
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -142,74 +144,71 @@ export function Player({ content, nextContent }: PlayerProps) {
       ref={playerRef}
       className="relative w-full h-screen bg-black"
       onMouseMove={handleMouseMove}
-      onClick={togglePlay}
+      onMouseLeave={() => isPlaying && setShowControls(false)}
     >
       <video
         ref={videoRef}
         src={content.videoUrl}
         className="w-full h-full object-contain"
-        muted
+        onClick={togglePlay}
         autoPlay
+        muted
       />
 
       <div className={`absolute inset-0 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-        {/* Back Button */}
-        <Link href="/" className="absolute top-4 left-4 sm:top-8 sm:left-8 z-20 flex items-center gap-2 text-white hover:text-primary transition-colors bg-black/50 p-2 rounded-md">
-          <ArrowLeft className="h-5 w-5" />
-          <span className="text-sm font-medium">Back to Home</span>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
+
+        <Link href="/" className="absolute top-6 left-6 sm:top-8 sm:left-8 z-20 flex items-center gap-2 text-white hover:text-primary transition-colors bg-black/30 p-2 rounded-md">
+          <ArrowLeft className="h-6 w-6" />
         </Link>
-
-        {/* Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none">
-          <h1 className="text-2xl sm:text-4xl font-bold">{content.title}</h1>
-          <p className="text-muted-foreground mt-2 max-w-2xl text-sm sm:text-base line-clamp-2">{content.description}</p>
-        </div>
-
-        {/* Controls */}
-        <div className="absolute bottom-20 left-4 right-4 sm:left-8 sm:right-8 z-20">
-          <div className="w-full cursor-pointer" onClick={e => {e.stopPropagation(); handleSeek(e)}}>
-            <Progress value={progress} className="h-1.5" />
+        
+        <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 z-10" onClick={e => e.stopPropagation()}>
+          <div className="max-w-3xl">
+              <h1 className="text-2xl sm:text-4xl font-bold text-white drop-shadow-lg">{content.title}</h1>
           </div>
-          <div className="flex items-center justify-between mt-2">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={e => {e.stopPropagation(); togglePlay()}}>
-                {isPlaying ? <Pause className="h-6 w-6 text-white" /> : <Play className="h-6 w-6 text-white" />}
-              </Button>
+          <div className="w-full mt-4">
+            <div className="w-full cursor-pointer group" onClick={handleSeek}>
+              <Progress value={progress} className="h-1 group-hover:h-1.5 transition-all" />
             </div>
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={toggleMute}>
-                {isMuted ? <VolumeX className="h-6 w-6 text-white" /> : <Volume2 className="h-6 w-6 text-white" />}
-              </Button>
+            <div className="flex items-center justify-between mt-2 text-white">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <Button variant="ghost" size="icon" onClick={togglePlay}>
+                  {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
+                </Button>
+                <Button variant="ghost" size="icon" onClick={toggleMute}>
+                  {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
       
-      {/* Skip Intro Button */}
       {showSkipIntro && (
-        <div className="absolute bottom-24 right-8 z-30">
-          <Button onClick={e => {e.stopPropagation(); skipIntro()}}>Skip Intro</Button>
+        <div className="absolute bottom-28 right-8 z-30">
+          <Button onClick={e => {e.stopPropagation(); skipIntro()}} className="bg-white/90 text-black hover:bg-white">Skip Intro</Button>
         </div>
       )}
-
-      {/* Up Next Overlay */}
+      
       {showUpNext && (
         <div 
-          className="absolute inset-0 bg-black/70 z-40 flex items-center justify-end"
+          className="absolute inset-0 bg-black/80 z-40 flex items-center justify-end"
           onClick={e => e.stopPropagation()}
         >
-          <div className="w-1/3 p-8 text-white">
-            <p className="text-lg text-muted-foreground">Up Next</p>
-            <h2 className="text-3xl font-bold mt-2">{nextContent.title}</h2>
-            <p className="text-sm text-muted-foreground mt-2 line-clamp-3">{nextContent.description}</p>
-            <div className="flex items-center gap-4 mt-6">
-              <Button onClick={() => router.push(`/watch/${nextContent.id}`)} className="bg-primary/80">
-                Play Now
-              </Button>
-              <p>Next video in {upNextCountdown}s</p>
-            </div>
+          <div className="w-full md:w-1/2 lg:w-2/5 p-8 text-white space-y-4">
+              <div>
+                <p className="text-lg text-muted-foreground">Up Next</p>
+                <h2 className="text-3xl font-bold mt-1">{nextContent.title}</h2>
+              </div>
+              <div className="flex items-center gap-4">
+                <Button onClick={() => router.push(`/watch/${nextContent.id}`)} className="bg-primary/90 hover:bg-primary">
+                  <Play className="mr-2 h-5 w-5" /> Play Now
+                </Button>
+                <p className="text-muted-foreground">Next episode in {upNextCountdown}s</p>
+              </div>
           </div>
-           <div className="w-1/3 h-full relative">
+           <div className="w-full md:w-1/2 lg:w-3/5 h-full relative hidden md:block">
                 <Image
                     src={nextContent.thumbnailUrl.replace('600/400', '1280/720')}
                     alt={nextContent.title}
@@ -217,7 +216,7 @@ export function Player({ content, nextContent }: PlayerProps) {
                     className="object-cover"
                     data-ai-hint="movie cinematic"
                 />
-                 <div className="absolute inset-0 bg-gradient-to-l from-transparent via-black/80 to-black/90" />
+                 <div className="absolute inset-0 bg-gradient-to-l from-black/30 via-black/80 to-black" />
             </div>
         </div>
       )}
