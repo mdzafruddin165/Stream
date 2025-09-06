@@ -27,7 +27,7 @@ export function Player({ content, nextContent }: PlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const [showControls, setShowControls] = useState(true);
@@ -36,6 +36,7 @@ export function Player({ content, nextContent }: PlayerProps) {
   const [upNextCountdown, setUpNextCountdown] = useState(10);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
+  const [upNextCancelled, setUpNextCancelled] = useState(false);
   
   let controlsTimeout: NodeJS.Timeout | null = null;
 
@@ -52,6 +53,11 @@ export function Player({ content, nextContent }: PlayerProps) {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+
+    // Reset state for new content
+    setUpNextCancelled(false);
+    setShowUpNext(false);
+    setShowSkipIntro(false);
 
     // Start playback. Muting is essential for autoplay in most browsers.
     video.muted = true;
@@ -81,7 +87,7 @@ export function Player({ content, nextContent }: PlayerProps) {
         }
         
         const remainingTime = duration - currentTime;
-        if (remainingTime < 11 && duration > 11) {
+        if (remainingTime < 11 && duration > 11 && !upNextCancelled) {
           if (!showUpNext) {
             setShowUpNext(true);
             setUpNextCountdown(10);
@@ -121,7 +127,7 @@ export function Player({ content, nextContent }: PlayerProps) {
       playerDiv?.removeEventListener('mousemove', handleMouseMove);
       if (controlsTimeout) clearTimeout(controlsTimeout);
     };
-  }, [content.id]); // Rerun effect if the content changes
+  }, [content.id, upNextCancelled]); // Rerun effect if the content changes
   
   useEffect(() => {
     let countdownInterval: NodeJS.Timeout;
@@ -194,6 +200,11 @@ export function Player({ content, nextContent }: PlayerProps) {
     }
   };
 
+  const handleCancelUpNext = () => {
+    setShowUpNext(false);
+    setUpNextCancelled(true);
+  };
+
   return (
     <TooltipProvider>
       <div
@@ -207,6 +218,8 @@ export function Player({ content, nextContent }: PlayerProps) {
           className="w-full h-full object-contain"
           playsInline
           loop
+          autoPlay
+          muted
         />
 
         {!isPlaying && (
@@ -309,7 +322,7 @@ export function Player({ content, nextContent }: PlayerProps) {
                   <Button onClick={() => router.push(`/watch/${nextContent.id}`)} size="lg" className="bg-primary/90 hover:bg-primary flex-1">
                     <Play className="mr-2 h-5 w-5" /> Play Now
                   </Button>
-                  <Button onClick={() => setShowUpNext(false)} size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30">
+                  <Button onClick={handleCancelUpNext} size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30">
                     Cancel
                   </Button>
                 </div>

@@ -26,7 +26,7 @@ export default function Home() {
     return acc;
   }, {} as Record<string, Content[]>);
 
-  const watchHistory = ['The Avengers', 'Inception', 'The Dark Knight'];
+  const watchHistory = ['The Avengers', 'Mirror'];
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
