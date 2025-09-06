@@ -1,7 +1,7 @@
-import { contentData } from '@/lib/data';
+import { contentData, type Content } from '@/lib/data';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { Player } from './player';
+import { MoreLikeThis } from './more-like-this';
 
 type WatchPageProps = {
   params: {
@@ -16,24 +16,21 @@ export default function WatchPage({ params }: WatchPageProps) {
     notFound();
   }
 
+  const relatedContent = contentData.filter(
+    item => item.category === content.category && item.id !== content.id
+  );
+  
+  const allContentInCategory = contentData.filter(
+    (item) => item.category === content.category
+  );
+  const currentIndex = allContentInCategory.findIndex(item => item.id === content.id);
+  const nextContent = allContentInCategory[(currentIndex + 1) % allContentInCategory.length];
+
+
   return (
     <div className="bg-black min-h-screen flex flex-col text-white">
-       <Link href="/" className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex items-center gap-2 text-white hover:text-primary transition-colors bg-black/30 p-2 rounded-md">
-          <ArrowLeft className="h-5 w-5" />
-          <span className="text-sm font-medium">Back to Home</span>
-        </Link>
-      <div className="w-full h-screen">
-          <video
-            src={content.videoUrl}
-            controls
-            autoPlay
-            className="w-full h-full object-contain"
-          />
-      </div>
-      <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black/70 to-transparent">
-        <h1 className="text-2xl sm:text-4xl font-bold">{content.title}</h1>
-        <p className="text-muted-foreground mt-2 max-w-2xl text-sm sm:text-base">{content.description}</p>
-      </div>
+      <Player content={content} nextContent={nextContent} />
+      <MoreLikeThis items={relatedContent} />
     </div>
   );
 }

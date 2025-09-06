@@ -19,7 +19,7 @@ export default function Home() {
   const watchHistory = ['The Avengers', 'Inception', 'The Dark Knight'];
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="flex-1">
         <HeroSection content={featuredContent} />
