@@ -53,6 +53,20 @@ export function Player({ content, nextContent }: PlayerProps) {
     const video = videoRef.current;
     if (!video) return;
 
+    // Start playback. Muting is essential for autoplay in most browsers.
+    video.muted = true;
+    setIsMuted(true);
+    const playPromise = video.play();
+
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        setIsPlaying(true);
+      }).catch(error => {
+        console.error("Autoplay was prevented:", error);
+        setIsPlaying(false);
+      });
+    }
+
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
     const handleTimeUpdate = () => {
@@ -98,23 +112,6 @@ export function Player({ content, nextContent }: PlayerProps) {
         }
     });
 
-    // Autoplay when the component mounts
-    const playPromise = video.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        // Autoplay started!
-        setIsPlaying(true);
-      }).catch(error => {
-        // Autoplay was prevented.
-        // The user will need to interact to start the video.
-        console.error("Autoplay was prevented: ", error);
-        setIsPlaying(false);
-        // Ensure video is muted and show controls so user can interact.
-        video.muted = true;
-        setIsMuted(true);
-      });
-    }
-
 
     return () => {
       video.removeEventListener('play', handlePlay);
@@ -124,7 +121,7 @@ export function Player({ content, nextContent }: PlayerProps) {
       playerDiv?.removeEventListener('mousemove', handleMouseMove);
       if (controlsTimeout) clearTimeout(controlsTimeout);
     };
-  }, [showUpNext]);
+  }, [content.id]); // Rerun effect if the content changes
   
   useEffect(() => {
     let countdownInterval: NodeJS.Timeout;
@@ -208,9 +205,8 @@ export function Player({ content, nextContent }: PlayerProps) {
           ref={videoRef}
           src={content.videoUrl}
           className="w-full h-full object-contain"
-          autoPlay
-          muted
           playsInline
+          loop
         />
 
         {!isPlaying && (
@@ -324,5 +320,3 @@ export function Player({ content, nextContent }: PlayerProps) {
     </TooltipProvider>
   );
 }
-
-    
