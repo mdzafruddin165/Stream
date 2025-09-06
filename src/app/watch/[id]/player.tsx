@@ -76,16 +76,6 @@ export function Player({ content, nextContent }: PlayerProps) {
       }
     };
 
-    const handleLoadedMetadata = () => {
-        if (videoRef.current) {
-          videoRef.current.muted = true;
-          videoRef.current.play().catch(() => {
-            setIsPlaying(false);
-          });
-          setIsPlaying(true);
-        }
-    };
-
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
@@ -93,7 +83,6 @@ export function Player({ content, nextContent }: PlayerProps) {
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
     video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     
     const playerDiv = playerRef.current;
@@ -106,6 +95,22 @@ export function Player({ content, nextContent }: PlayerProps) {
           setShowControls(false);
         }
     });
+
+    // Autoplay when the component mounts
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        setIsPlaying(true);
+      }).catch(error => {
+        console.error("Autoplay was prevented: ", error);
+        setIsPlaying(false);
+        // If autoplay is blocked, we'll keep the video muted
+        // and let the user click to start.
+        video.muted = true;
+        setIsMuted(true);
+      });
+    }
+
 
     return () => {
       video.removeEventListener('play', handlePlay);
