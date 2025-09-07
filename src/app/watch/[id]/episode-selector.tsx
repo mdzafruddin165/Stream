@@ -43,12 +43,12 @@ export function EpisodeSelector({ content, currentEpisodeId, onClose }: EpisodeS
 
   return (
     <div className="absolute inset-0 bg-black/90 z-40 flex flex-col p-4 sm:p-8" onClick={(e) => e.stopPropagation()}>
-      <header className="flex items-center justify-between mb-6">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+        <h2 className="text-2xl sm:text-3xl font-bold">{content.title}</h2>
         <div className="flex items-center gap-4">
-          <h2 className="text-3xl font-bold">{content.title}</h2>
           {content.seasons && content.seasons.length > 1 && (
               <Select value={String(selectedSeason.season)} onValueChange={handleSeasonChange}>
-                <SelectTrigger className="w-[180px] bg-neutral-800 border-neutral-700">
+                <SelectTrigger className="w-full sm:w-[180px] bg-neutral-800 border-neutral-700">
                     <SelectValue placeholder="Season" />
                 </SelectTrigger>
                 <SelectContent>
@@ -60,14 +60,14 @@ export function EpisodeSelector({ content, currentEpisodeId, onClose }: EpisodeS
                 </SelectContent>
             </Select>
           )}
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-10 w-10 sm:h-12 sm:w-12 ml-auto sm:ml-0">
+            <X className="h-6 w-6" />
+          </Button>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-10 w-10">
-          <X className="h-6 w-6" />
-        </Button>
       </header>
 
       <ScrollArea className="flex-1">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {selectedSeason.episodes.map((episode, index) => (
             <div
               key={episode.id}
@@ -87,19 +87,19 @@ export function EpisodeSelector({ content, currentEpisodeId, onClose }: EpisodeS
                 />
                  {episode.id === currentEpisodeId && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="h-12 w-12 rounded-full bg-primary/80 flex items-center justify-center">
-                            <PlayIcon className="h-6 w-6 text-white" />
+                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/80 flex items-center justify-center">
+                            <PlayIcon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
                     </div>
                 )}
               </div>
-              <div className="p-3">
+              <div className="p-2 sm:p-3">
                 <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-sm mb-1">
+                    <h3 className="font-bold text-xs sm:text-sm mb-1 line-clamp-1">
                         {index + 1}. {episode.title}
                     </h3>
                 </div>
-                <p className="text-xs text-muted-foreground line-clamp-3">{episode.description}</p>
+                <p className="text-xs text-muted-foreground line-clamp-2 sm:line-clamp-3">{episode.description}</p>
               </div>
             </div>
           ))}

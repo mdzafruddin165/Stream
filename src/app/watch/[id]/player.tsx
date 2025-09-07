@@ -253,7 +253,7 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
 
         {!playerState.isPlaying && !playerState.isEpisodeSelectorOpen && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 pointer-events-none">
-                <Play className="h-24 w-24 text-white/70" />
+                <Play className="h-16 w-16 sm:h-24 sm:w-24 text-white/70" />
             </div>
         )}
 
@@ -264,17 +264,17 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/80" />
           
           <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 lg:p-8 flex items-start justify-between pointer-events-auto">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Link href="/" passHref>
-                <Button variant="ghost" size="icon" className="h-12 w-12 text-white hover:bg-white/10 hover:text-white" onClick={(e) => e.stopPropagation()}>
-                    <ArrowLeft className="h-6 w-6 sm:h-7 sm:w-7" />
+                <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-12 sm:w-12 text-white hover:bg-white/10 hover:text-white" onClick={(e) => e.stopPropagation()}>
+                    <ArrowLeft className="h-5 w-5 sm:h-7 sm:w-7" />
                 </Button>
               </Link>
               <div className="flex flex-col">
-                <h1 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg line-clamp-2">{title}</h1>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg line-clamp-2">{title}</h1>
                 <p 
-                  className={cn("text-sm text-gray-300 drop-shadow-md max-w-2xl transition-all duration-300 ease-in-out",
-                    playerState.showDescription ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0"
+                  className={cn("text-xs sm:text-sm text-gray-300 drop-shadow-md max-w-2xl transition-all duration-300 ease-in-out",
+                    playerState.showDescription ? "max-h-40 opacity-100 mt-1 sm:mt-2" : "max-h-0 opacity-0"
                   )}
                   style={{ transition: 'max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.3s ease-in-out' }}
                 >
@@ -284,8 +284,8 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
             </div>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-12 w-12 text-white hover:bg-white/10 hover:text-white" onClick={(e) => { e.stopPropagation(); setPlayerState(p => ({...p, showDescription: !p.showDescription})) }}>
-                    <Info className="h-6 w-6 sm:h-7 sm:w-7" />
+                <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-12 sm:w-12 text-white hover:bg-white/10 hover:text-white" onClick={(e) => { e.stopPropagation(); setPlayerState(p => ({...p, showDescription: !p.showDescription})) }}>
+                    <Info className="h-5 w-5 sm:h-7 sm:w-7" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -294,25 +294,25 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
             </Tooltip>
           </div>
           
-          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8 space-y-3 pointer-events-auto" onClick={e => e.stopPropagation()}>
+          <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 pointer-events-auto" onClick={e => e.stopPropagation()}>
             <div className="w-full cursor-pointer group" onClick={handleSeek}>
-              <Progress value={playerState.progress} className="h-1.5 bg-white/30 group-hover:h-2 transition-all duration-200" />
+              <Progress value={playerState.progress} className="h-1 bg-white/30 sm:h-1.5 group-hover:h-2 transition-all duration-200" />
             </div>
             <div className="flex items-center justify-between text-white">
-              <div className="flex items-center gap-2 sm:gap-4">
-                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={togglePlay}>
-                  {playerState.isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
+              <div className="flex items-center gap-1 sm:gap-4">
+                <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-11 sm:w-11" onClick={togglePlay}>
+                  {playerState.isPlaying ? <Pause className="h-6 w-6 sm:h-7 sm:w-7" /> : <Play className="h-6 w-6 sm:h-7 sm:w-7" />}
                 </Button>
-                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={toggleMute}>
-                  {playerState.isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
+                <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-11 sm:w-11" onClick={toggleMute}>
+                  {playerState.isMuted ? <VolumeX className="h-5 w-5 sm:h-6 sm:w-6" /> : <Volume2 className="h-5 w-5 sm:h-6 sm:w-6" />}
                 </Button>
               </div>
-              <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex items-center gap-1 sm:gap-4">
                 {content.type === 'tv' && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-11 w-11" onClick={toggleEpisodeSelector}>
-                        <ListVideo className="h-6 w-6" />
+                      <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-11 sm:w-11" onClick={toggleEpisodeSelector}>
+                        <ListVideo className="h-5 w-5 sm:h-6 sm:w-6" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -320,8 +320,8 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
                     </TooltipContent>
                   </Tooltip>
                 )}
-                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={toggleFullscreen}>
-                  {playerState.isFullscreen ? <Minimize className="h-6 w-6" /> : <Maximize className="h-6 w-6" />}
+                <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-11 sm:w-11" onClick={toggleFullscreen}>
+                  {playerState.isFullscreen ? <Minimize className="h-5 w-5 sm:h-6 sm:w-6" /> : <Maximize className="h-5 w-5 sm:h-6 sm:w-6" />}
                 </Button>
               </div>
             </div>
@@ -329,7 +329,7 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
         </div>
         
         {playerState.showSkipIntro && (
-          <div className="absolute bottom-24 sm:bottom-28 right-4 sm:right-8 z-20 pointer-events-auto">
+          <div className="absolute bottom-20 sm:bottom-28 right-4 sm:right-8 z-20 pointer-events-auto">
             <Button onClick={skipIntro} className="bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border border-white/30">
               Skip Intro
             </Button>
@@ -338,15 +338,15 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
         
         {playerState.showUpNext && nextEpisode && (
           <div 
-            className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent z-30 flex items-center justify-start pointer-events-auto"
+            className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent md:bg-gradient-to-r z-30 flex items-end md:items-center justify-center md:justify-start pointer-events-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-full md:w-2/5 lg:w-1/3 p-8 text-white space-y-4">
+            <div className="w-full md:w-2/5 lg:w-1/3 p-4 sm:p-8 text-white space-y-3 sm:space-y-4 bg-black/80 md:bg-transparent rounded-t-xl md:rounded-none">
                 <div>
-                  <p className="text-lg text-muted-foreground font-semibold">Up Next</p>
-                  <h2 className="text-3xl font-bold mt-1 line-clamp-2">{nextEpisode.title}</h2>
+                  <p className="text-base sm:text-lg text-muted-foreground font-semibold">Up Next</p>
+                  <h2 className="text-2xl sm:text-3xl font-bold mt-1 line-clamp-2">{nextEpisode.title}</h2>
                 </div>
-                 <div className="relative h-40 w-full rounded-lg overflow-hidden my-4 shadow-lg">
+                 <div className="relative h-28 sm:h-40 w-full rounded-lg overflow-hidden my-2 sm:my-4 shadow-lg">
                    <Image
                       src={nextEpisode.thumbnailUrl.replace('600/400', '800/450')}
                       alt={nextEpisode.title}
@@ -355,11 +355,11 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
                       data-ai-hint="movie cinematic"
                   />
                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                   <div className="absolute bottom-2 right-2 text-sm bg-black/50 px-2 py-1 rounded">
+                   <div className="absolute bottom-2 right-2 text-xs sm:text-sm bg-black/50 px-2 py-1 rounded">
                      Next episode in {playerState.upNextCountdown}s
                    </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                   <Button onClick={handleNextEpisode} size="lg" className="bg-primary/90 hover:bg-primary flex-1">
                     <Play className="mr-2 h-5 w-5" /> Play Now
                   </Button>
