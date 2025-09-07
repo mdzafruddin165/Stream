@@ -86,13 +86,13 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
   
   const handleNextEpisode = useCallback(() => {
     if (nextEpisode) {
-        if (nextEpisode.id.startsWith('ep')) { // It's an episode in the same series
+        if (content.type === 'tv' && nextEpisode.id.startsWith('ep')) { // It's an episode in the same series
             router.push(`/watch/${content.id}?episode=${nextEpisode.id}`);
         } else { // It's a different piece of content
             router.push(`/watch/${nextEpisode.id}`);
         }
     }
-  }, [router, content.id, nextEpisode]);
+  }, [router, content.id, content.type, nextEpisode]);
 
 
   useEffect(() => {
@@ -114,20 +114,22 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
     const handlePlay = () => setPlayerState(prev => ({...prev, isPlaying: true}));
     const handlePause = () => setPlayerState(prev => ({...prev, isPlaying: false}));
     const handleTimeUpdate = () => {
-      const { currentTime, duration } = video;
-      if (isNaN(duration)) return;
-      setPlayerState(prev => ({...prev, progress: (currentTime / duration) * 100}));
+      const videoEl = videoRef.current;
+      if (!videoEl) return;
 
-      if (currentTime > 10 && currentTime < 30) {
-        setPlayerState(prev => ({...prev, showSkipIntro: true}));
-      } else if (playerState.showSkipIntro) {
-        setPlayerState(prev => ({...prev, showSkipIntro: false}));
-      }
+      const { currentTime, duration } = videoEl;
+      if (isNaN(duration)) return;
       
-      const remainingTime = duration - currentTime;
-      if (remainingTime <= 10 && !upNextCancelled && duration > 10 && nextEpisode) {
-        setPlayerState(prev => ({...prev, showUpNext: true}));
-      }
+      const newProgress = (currentTime / duration) * 100;
+      const shouldShowSkipIntro = currentTime > 10 && currentTime < 30;
+      const shouldShowUpNext = (duration - currentTime) <= 10 && !upNextCancelled && duration > 10 && nextEpisode;
+
+      setPlayerState(prev => ({
+        ...prev, 
+        progress: newProgress,
+        showSkipIntro: shouldShowSkipIntro,
+        showUpNext: shouldShowUpNext,
+      }));
     };
 
     const handleFullscreenChange = () => setPlayerState(prev => ({...prev, isFullscreen: !!document.fullscreenElement}));
@@ -145,23 +147,25 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
       if (upNextCountdownRef.current) clearInterval(upNextCountdownRef.current);
     };
-  }, [upNextCancelled, nextEpisode, playerState.showSkipIntro]);
+  }, [upNextCancelled, nextEpisode]);
 
   useEffect(() => {
-    if (playerState.showUpNext && playerState.isPlaying) {
-      if (upNextCountdownRef.current) clearInterval(upNextCountdownRef.current);
+    if (playerState.showUpNext && playerState.isPlaying && !upNextCountdownRef.current) {
       let count = 10;
       setPlayerState(prev => ({...prev, upNextCountdown: count}));
       upNextCountdownRef.current = setInterval(() => {
         count--;
         if (count <= 0) {
           clearInterval(upNextCountdownRef.current!);
+          upNextCountdownRef.current = null;
           handleNextEpisode();
         } else {
           setPlayerState(prev => ({...prev, upNextCountdown: count}));
         }
       }, 1000);
-      return () => { if (upNextCountdownRef.current) clearInterval(upNextCountdownRef.current) };
+    } else if (!playerState.showUpNext && upNextCountdownRef.current) {
+        clearInterval(upNextCountdownRef.current);
+        upNextCountdownRef.current = null;
     }
   }, [playerState.showUpNext, playerState.isPlaying, handleNextEpisode]);
 
@@ -190,6 +194,7 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
   const skipIntro = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (videoRef.current) videoRef.current.currentTime = 30;
+    setPlayerState(p => ({...p, showSkipIntro: false}));
   };
 
   const toggleMute = (e: React.MouseEvent) => {
@@ -230,16 +235,17 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
         onClick={togglePlay}
       >
         <video
+          key={videoUrl}
           ref={videoRef}
           src={videoUrl}
           className="w-full h-full object-contain"
           playsInline
         />
 
-        {playerState.isEpisodeSelectorOpen && content.type === 'tv' && (
+        {playerState.isEpisodeSelectorOpen && content.type === 'tv' && currentEpisode && (
           <EpisodeSelector
             content={content}
-            currentEpisodeId={currentEpisode?.id || ''}
+            currentEpisodeId={currentEpisode.id}
             onClose={() => setPlayerState(prev => ({ ...prev, isEpisodeSelectorOpen: false }))}
           />
         )}
