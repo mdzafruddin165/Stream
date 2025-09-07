@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { X, ChevronDown } from 'lucide-react';
+import { X } from 'lucide-react';
 import type { Content, Episode, Season } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
