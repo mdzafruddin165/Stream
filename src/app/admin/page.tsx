@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useState, useEffect } from 'react';
+import { useForm, useFieldArray, type Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Header } from '@/components/header';
@@ -20,11 +20,11 @@ import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Copy } from 'lucide-react';
 
 const episodeSchema = z.object({
-  id: z.string().min(1, 'Episode ID is required'),
-  title: z.string().min(1, 'Episode title is required'),
-  description: z.string().min(1, 'Episode description is required'),
-  thumbnailUrl: z.string().url('Must be a valid URL'),
-  videoUrl: z.string().url('Must be a valid URL'),
+  id: z.string().min(1, 'Episode ID is required.'),
+  title: z.string().min(1, 'Episode title is required.'),
+  description: z.string().min(1, 'Episode description is required.'),
+  thumbnailUrl: z.string().url('Must be a valid URL.'),
+  videoUrl: z.string().url('Must be a valid URL.'),
 });
 
 const seasonSchema = z.object({
@@ -33,11 +33,11 @@ const seasonSchema = z.object({
 });
 
 const contentSchema = z.object({
-  id: z.string().min(1, 'ID is required'),
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().min(1, 'Description is required'),
-  category: z.string().min(1, 'Category is required'),
-  thumbnailUrl: z.string().url('Must be a valid URL'),
+  id: z.string().min(1, 'ID is required.'),
+  title: z.string().min(1, 'Title is required.'),
+  description: z.string().min(1, 'Description is required.'),
+  category: z.string().min(1, 'Category is required.'),
+  thumbnailUrl: z.string().url('Must be a valid URL.'),
   type: z.enum(['movie', 'tv']),
   videoUrl: z.string().optional(),
   seasons: z.array(seasonSchema).optional(),
@@ -75,7 +75,18 @@ export default function AdminPage() {
 
   const contentType = form.watch('type');
 
+  useEffect(() => {
+    // Clear generated code when content type changes
+    setGeneratedCode('');
+  }, [contentType]);
+
   const onSubmit = (data: ContentFormValues) => {
+    // For TV shows, ensure season numbers are sequential if they were modified
+    if (data.type === 'tv' && data.seasons) {
+        data.seasons.forEach((season, index) => {
+            season.season = index + 1;
+        });
+    }
     const codeString = JSON.stringify(data, null, 2);
     setGeneratedCode(codeString);
     toast({
@@ -85,6 +96,7 @@ export default function AdminPage() {
   };
 
   const copyToClipboard = () => {
+    if(!generatedCode) return;
     navigator.clipboard.writeText(generatedCode + ',');
     toast({
       title: 'Copied to Clipboard!',
@@ -198,6 +210,7 @@ export default function AdminPage() {
                         ))}
                         <Button type="button" variant="outline" size="sm" onClick={() => appendSeason({ season: seasonFields.length + 1, episodes: [] })}><PlusCircle className="mr-2 h-4 w-4" /> Add Season</Button>
                         <FormMessage>{form.formState.errors.seasons?.message}</FormMessage>
+                        <FormMessage>{form.formState.errors.seasons?.root?.message}</FormMessage>
                       </div>
                     )}
                     
@@ -213,9 +226,9 @@ export default function AdminPage() {
                     <Separator />
                     <div className="mt-6">
                       <h3 className="text-lg font-semibold mb-2">Generated Code</h3>
-                      <p className="text-sm text-muted-foreground mb-4">Copy this code and paste it into your `src/lib/data.ts` file inside the `contentData` array.</p>
+                      <p className="text-sm text-muted-foreground mb-4">Copy this code and paste it inside the `contentData` array in your `src/lib/data.ts` file.</p>
                       <div className="relative">
-                        <Textarea readOnly value={generatedCode} rows={15} className="bg-muted pr-12" />
+                        <Textarea readOnly value={generatedCode} rows={Math.min(20, generatedCode.split('\n').length)} className="bg-muted pr-12 font-mono text-xs" />
                         <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground" onClick={copyToClipboard}>
                           <Copy className="h-5 w-5" />
                         </Button>
@@ -234,7 +247,7 @@ export default function AdminPage() {
 }
 
 
-function EpisodeArray({ control, seasonIndex }: { control: any, seasonIndex: number }) {
+function EpisodeArray({ control, seasonIndex }: { control: Control<ContentFormValues>, seasonIndex: number }) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: `seasons.${seasonIndex}.episodes`,
@@ -248,59 +261,59 @@ function EpisodeArray({ control, seasonIndex }: { control: any, seasonIndex: num
               <h5 className="font-semibold">Episode {episodeIndex + 1}</h5>
               <Button type="button" variant="ghost" size="icon" onClick={() => remove(episodeIndex)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
             </div>
-            <Controller
+            <FormField
                 control={control}
                 name={`seasons.${seasonIndex}.episodes.${episodeIndex}.id`}
-                render={({ field, fieldState }) => (
+                render={({ field }) => (
                    <FormItem>
                     <FormLabel>Episode ID</FormLabel>
-                    <FormControl><Input placeholder="e.g., ep101" {...field} /></FormControl>
-                    <FormMessage>{fieldState.error?.message}</FormMessage>
+                    <FormControl><Input placeholder="e.g., s01e01" {...field} /></FormControl>
+                    <FormMessage />
                    </FormItem>
                 )}
             />
-            <Controller
+            <FormField
                 control={control}
                 name={`seasons.${seasonIndex}.episodes.${episodeIndex}.title`}
-                render={({ field, fieldState }) => (
+                render={({ field }) => (
                    <FormItem>
                     <FormLabel>Episode Title</FormLabel>
                     <FormControl><Input placeholder="Episode Title" {...field} /></FormControl>
-                    <FormMessage>{fieldState.error?.message}</FormMessage>
+                    <FormMessage />
                    </FormItem>
                 )}
             />
-            <Controller
+            <FormField
                 control={control}
                 name={`seasons.${seasonIndex}.episodes.${episodeIndex}.description`}
-                render={({ field, fieldState }) => (
+                render={({ field }) => (
                    <FormItem>
                     <FormLabel>Episode Description</FormLabel>
                     <FormControl><Textarea placeholder="Episode Description" {...field} /></FormControl>
-                    <FormMessage>{fieldState.error?.message}</FormMessage>
+                    <FormMessage />
                    </FormItem>
                 )}
             />
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Controller
+                <FormField
                     control={control}
                     name={`seasons.${seasonIndex}.episodes.${episodeIndex}.thumbnailUrl`}
-                    render={({ field, fieldState }) => (
+                    render={({ field }) => (
                     <FormItem>
                         <FormLabel>Episode Thumbnail URL</FormLabel>
                         <FormControl><Input placeholder="https://..." {...field} /></FormControl>
-                        <FormMessage>{fieldState.error?.message}</FormMessage>
+                        <FormMessage />
                     </FormItem>
                     )}
                 />
-                <Controller
+                <FormField
                     control={control}
                     name={`seasons.${seasonIndex}.episodes.${episodeIndex}.videoUrl`}
-                    render={({ field, fieldState }) => (
+                    render={({ field }) => (
                     <FormItem>
                         <FormLabel>Episode Video URL</FormLabel>
                         <FormControl><Input placeholder="https://..." {...field} /></FormControl>
-                        <FormMessage>{fieldState.error?.message}</FormMessage>
+                        <FormMessage />
                     </FormItem>
                     )}
                 />
@@ -310,9 +323,7 @@ function EpisodeArray({ control, seasonIndex }: { control: any, seasonIndex: num
       <Button type="button" variant="outline" size="sm" onClick={() => append({ id: '', title: '', description: '', thumbnailUrl: '', videoUrl: '' })}>
         <PlusCircle className="mr-2 h-4 w-4" /> Add Episode
       </Button>
-       <FormMessage>{(control._formState.errors as any)?.seasons?.[seasonIndex]?.episodes?.message}</FormMessage>
+       <FormMessage>{(control.getFieldState(`seasons.${seasonIndex}.episodes`)?.error as any)?.message}</FormMessage>
     </div>
   );
 }
-
-    
