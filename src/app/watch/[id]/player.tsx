@@ -231,7 +231,12 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
     <TooltipProvider>
       <div
         ref={playerRef}
-        className="relative w-full aspect-video md:h-screen bg-black overflow-hidden cursor-pointer"
+        className={cn(
+            "relative w-full bg-black overflow-hidden cursor-pointer",
+            playerState.isFullscreen 
+                ? 'fixed inset-0 z-50' 
+                : 'aspect-video md:h-screen'
+        )}
         onClick={togglePlay}
       >
         <video
@@ -321,7 +326,7 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
                   </Tooltip>
                 )}
                 <Button variant="ghost" size="icon" className="h-10 w-10 sm:h-11 sm:w-11" onClick={toggleFullscreen}>
-                  {playerState.isFullscreen ? <Minimize className="h-5 w-5 sm:h-6 sm:w-6" /> : <Maximize className="h-5 w-5 sm:h-6 sm:w-6" />}
+                  {playerState.isFullscreen ? <Minimize className="h-5 w-5 sm:h-6 sm:w-6" /> : <Maximize className="h-5 w-5 sm:h-6 smw-6" />}
                 </Button>
               </div>
             </div>
@@ -374,3 +379,5 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
     </TooltipProvider>
   );
 }
+
+    
