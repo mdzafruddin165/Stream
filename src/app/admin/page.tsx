@@ -17,7 +17,7 @@ import { logout } from './login/actions';
 import { useRouter } from 'next/navigation';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, Copy } from 'lucide-react';
 
 const episodeSchema = z.object({
   id: z.string().min(1, 'Episode ID is required'),
@@ -58,6 +58,7 @@ export default function AdminPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
+  const [generatedCode, setGeneratedCode] = useState('');
 
   const form = useForm<ContentFormValues>({
     resolver: zodResolver(contentSchema),
@@ -75,14 +76,20 @@ export default function AdminPage() {
   const contentType = form.watch('type');
 
   const onSubmit = (data: ContentFormValues) => {
-    // In a real application, this would be a server action to save the data.
-    // For this prototype, we'll just show a notification and log the data.
-    console.log('Submitting new content:', JSON.stringify(data, null, 2));
+    const codeString = JSON.stringify(data, null, 2);
+    setGeneratedCode(codeString);
     toast({
-      title: 'Content Submitted (Simulated)',
-      description: 'Check the browser console to see the submitted data.',
+      title: 'Code Generated!',
+      description: 'You can now copy the code and add it to your data file.',
     });
-    // form.reset(); // Optionally reset form
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(generatedCode + ',');
+    toast({
+      title: 'Copied to Clipboard!',
+      description: 'Remember to add a comma after the object in your array.',
+    });
   };
   
   const handleLogout = async () => {
@@ -196,10 +203,27 @@ export default function AdminPage() {
                     
                     <Separator />
                     <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting ? 'Submitting...' : 'Add Content'}
+                        {form.formState.isSubmitting ? 'Generating Code...' : 'Generate Content Code'}
                     </Button>
                   </form>
                 </Form>
+
+                {generatedCode && (
+                  <div className="mt-8">
+                    <Separator />
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold mb-2">Generated Code</h3>
+                      <p className="text-sm text-muted-foreground mb-4">Copy this code and paste it into your `src/lib/data.ts` file inside the `contentData` array.</p>
+                      <div className="relative">
+                        <Textarea readOnly value={generatedCode} rows={15} className="bg-muted pr-12" />
+                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground" onClick={copyToClipboard}>
+                          <Copy className="h-5 w-5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
               </CardContent>
             </Card>
           </div>
@@ -290,3 +314,5 @@ function EpisodeArray({ control, seasonIndex }: { control: any, seasonIndex: num
     </div>
   );
 }
+
+    
