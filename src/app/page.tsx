@@ -18,12 +18,16 @@ export default function Home() {
     content.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const tvShows = filteredContent.filter(content => content.type === 'tv');
+
   const categories = filteredContent.reduce((acc, content) => {
-    const category = content.category;
-    if (!acc[category]) {
-      acc[category] = [];
+    if (content.type === 'movie') { // Only categorize movies for other rows
+      const category = content.category;
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(content);
     }
-    acc[category].push(content);
     return acc;
   }, {} as Record<string, Content[]>);
 
@@ -35,11 +39,16 @@ export default function Home() {
       <main className="flex-1">
         <HeroSection content={featuredContent} />
         <div className="py-8 sm:py-12 space-y-8 sm:space-y-12">
-          {searchQuery && Object.keys(categories).length === 0 && (
+          {searchQuery && Object.keys(categories).length === 0 && tvShows.length === 0 && (
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <p className="text-xl text-muted-foreground">No results found for "{searchQuery}"</p>
             </div>
             )}
+          
+          {tvShows.length > 0 && (
+            <ContentRow title="Web Series" items={tvShows} />
+          )}
+          
           {Object.entries(categories).map(([category, items]) => (
             <ContentRow key={category} title={category} items={items} />
           ))}
