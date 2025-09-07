@@ -10,8 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { contentData, type Content } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
+import { logout } from './login/actions';
+import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [newContent, setNewContent] = useState<Partial<Content>>({ type: 'movie' });
   const { toast } = useToast();
@@ -38,6 +41,11 @@ export default function AdminPage() {
     // setNewContent({ type: 'movie' });
   };
   
+  const handleLogout = async () => {
+    await logout();
+    router.push('/admin/login');
+  };
+
   const filteredContent = contentData.filter(content =>
     content.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -46,7 +54,10 @@ export default function AdminPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
-        <h1 className="text-4xl font-bold mb-8">Admin Panel</h1>
+        <div className="flex justify-between items-center mb-8">
+            <h1 className="text-4xl font-bold">Admin Panel</h1>
+            <Button variant="outline" onClick={handleLogout}>Log Out</Button>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
