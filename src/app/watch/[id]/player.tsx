@@ -231,7 +231,7 @@ export function Player({ content, currentEpisode, nextEpisode }: PlayerProps) {
     <TooltipProvider>
       <div
         ref={playerRef}
-        className="relative w-full h-screen bg-black overflow-hidden cursor-pointer"
+        className="relative w-full aspect-video md:h-screen bg-black overflow-hidden cursor-pointer"
         onClick={togglePlay}
       >
         <video
