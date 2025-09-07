@@ -1,12 +1,26 @@
 
+export type Episode = {
+  id: string;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  videoUrl: string;
+};
+
+export type Season = {
+  season: number;
+  episodes: Episode[];
+};
+
 export type Content = {
   id: string;
   title: string;
   description: string;
   category: string;
   thumbnailUrl: string;
-  videoUrl: string;
+  videoUrl?: string; // Optional for TV shows
   type: 'movie' | 'tv';
+  seasons?: Season[]; // Optional for movies
 };
 
 export type UserProfile = {
@@ -51,7 +65,7 @@ export const contentData: Content[] = [
     description: 'Earth\'s mightiest heroes must come together and learn to fight as a team if they are going to stop the mischievous Loki and his alien army from enslaving humanity.',
     category: 'Sci-Fi',
     thumbnailUrl: 'https://picsum.photos/seed/avengers/600/400',
-    videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl: 'https://jumpshare.com/s/Y3lgb2vc5Poj82ZgO9E4',
     type: 'movie',
   },
   {
@@ -60,8 +74,24 @@ export const contentData: Content[] = [
     description: 'When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces, and one strange little girl.',
     category: 'Sci-Fi',
     thumbnailUrl: 'https://picsum.photos/seed/stranger/600/400',
-    videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
     type: 'tv',
+    seasons: [
+      {
+        season: 1,
+        episodes: [
+          { id: 'ep101', title: 'The Vanishing of Will Byers', description: 'A young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces, and one strange little girl.', thumbnailUrl: 'https://picsum.photos/seed/s1e1/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
+          { id: 'ep102', title: 'The Weirdo on Maple Street', description: 'Lucas, Mike, and Dustin try to talk to the girl they found in the woods. Hopper questions an anxious Joyce about an unsettling phone call.', thumbnailUrl: 'https://picsum.photos/seed/s1e2/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+          { id: 'ep103', title: 'Holly, Jolly', description: 'An increasingly concerned Nancy looks for Barb and finds out what Jonathan\'s been up to. Joyce is convinced Will is trying to talk to her.', thumbnailUrl: 'https://picsum.photos/seed/s1e3/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4' },
+        ],
+      },
+      {
+        season: 2,
+        episodes: [
+          { id: 'ep201', title: 'MADMAX', description: 'As the town preps for Halloween, a high-scoring rival shakes things up at the arcade, and a skeptical Hopper inspects a field of rotting pumpkins.', thumbnailUrl: 'https://picsum.photos/seed/s2e1/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4' },
+          { id: 'ep202', title: 'Trick or Treat, Freak', description: 'After Will sees something terrible on trick-or-treating night, Mike wonders if Eleven is still out there. Nancy wrestles with the truth about Barb.', thumbnailUrl: 'https://picsum.photos/seed/s2e2/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4' },
+        ],
+      },
+    ]
   },
   {
     id: 'the-mandalorian',
@@ -69,8 +99,16 @@ export const contentData: Content[] = [
     description: 'The travels of a lone bounty hunter in the outer reaches of the galaxy, far from the authority of the New Republic.',
     category: 'Sci-Fi',
     thumbnailUrl: 'https://picsum.photos/seed/mandalorian/600/400',
-    videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
     type: 'tv',
+    seasons: [
+        {
+            season: 1,
+            episodes: [
+                { id: 'ep301', title: 'Chapter 1: The Mandalorian', description: 'A Mandalorian bounty hunter tracks a target for a well-paying client.', thumbnailUrl: 'https://picsum.photos/seed/m1e1/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4' },
+                { id: 'ep302', title: 'Chapter 2: The Child', description: 'Target in hand, the Mandalorian must now contend with scavengers.', thumbnailUrl: 'https://picsum.photos/seed/m1e2/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4' },
+            ]
+        }
+    ]
   },
   {
     id: 'black-mirror',
@@ -80,6 +118,14 @@ export const contentData: Content[] = [
     thumbnailUrl: 'https://picsum.photos/seed/blackmirror/600/400',
     videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
     type: 'tv',
+     seasons: [
+        {
+            season: 1,
+            episodes: [
+                { id: 'ep401', title: 'The National Anthem', description: 'Prime Minister Michael Callow faces a shocking dilemma when a royal family member is kidnapped.', thumbnailUrl: 'https://picsum.photos/seed/bm1e1/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4' },
+            ]
+        }
+    ]
   },
   {
     id: 'blade-runner-2049',
@@ -96,8 +142,16 @@ export const contentData: Content[] = [
     description: 'A mockumentary on a group of typical office workers, where the workday consists of ego clashes, inappropriate behavior, and tedium.',
     category: 'Comedy',
     thumbnailUrl: 'https://picsum.photos/seed/office/600/400',
-    videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     type: 'tv',
+     seasons: [
+        {
+            season: 1,
+            episodes: [
+                { id: 'ep501', title: 'Pilot', description: 'The premiere episode of the American mockumentary television series The Office.', thumbnailUrl: 'https://picsum.photos/seed/o1e1/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+                { id: 'ep502', title: 'Diversity Day', description: 'Michael\'s controversial imitation of a Chris Rock routine forces the staff to undergo a racial diversity seminar.', thumbnailUrl: 'https://picsum.photos/seed/o1e2/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4' },
+            ]
+        }
+    ]
   },
     {
     id: 'friends',
@@ -107,6 +161,14 @@ export const contentData: Content[] = [
     thumbnailUrl: 'https://picsum.photos/seed/friends/600/400',
     videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
     type: 'tv',
+     seasons: [
+        {
+            season: 1,
+            episodes: [
+                { id: 'ep601', title: 'The One Where Monica Gets a Roommate', description: 'Monica and her friends\' lives are thrown into chaos after Rachel Green, a runaway bride, arrives in New York City.', thumbnailUrl: 'https://picsum.photos/seed/f1e1/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4' },
+            ]
+        }
+    ]
   },
   {
     id: 'parks-and-rec',
@@ -116,6 +178,14 @@ export const contentData: Content[] = [
     thumbnailUrl: 'https://picsum.photos/seed/parks/600/400',
     videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
     type: 'tv',
+     seasons: [
+        {
+            season: 1,
+            episodes: [
+                { id: 'ep701', title: 'Pilot', description: 'Deputy Director of the Pawnee City Department of Parks and Recreation, Leslie Knope, takes on a project to turn a construction pit into a park.', thumbnailUrl: 'https://picsum.photos/seed/p1e1/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4' },
+            ]
+        }
+    ]
   },
   {
     id: 'superbad',
@@ -186,8 +256,15 @@ export const contentData: Content[] = [
     description: 'A high school chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine in order to secure his family\'s future.',
     category: 'Drama',
     thumbnailUrl: 'https://picsum.photos/seed/breaking/600/400',
-    videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
     type: 'tv',
+     seasons: [
+        {
+            season: 1,
+            episodes: [
+                { id: 'ep801', title: 'Pilot', description: 'Diagnosed with terminal lung cancer, a high school chemistry teacher resorts to cooking and selling methamphetamine to provide for his family.', thumbnailUrl: 'https://picsum.photos/seed/bb1e1/600/400', videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4' },
+            ]
+        }
+    ]
   },
   {
     id: 'pulp-fiction',
